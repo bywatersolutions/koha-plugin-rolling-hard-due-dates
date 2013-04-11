@@ -1,0 +1,125 @@
+[% USE KohaDates %]
+[% INCLUDE 'doc-head-open.inc' %]
+ <title>Koha: Plugin: Rolling hard due dates</title>
+[% INCLUDE 'doc-head-close.inc' %]
+[% INCLUDE 'calendar.inc' %]
+</head>
+<body>
+[% INCLUDE 'header.inc' %]
+[% INCLUDE 'cat-search.inc' %]
+
+<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/plugins/plugins-home.pl">Plugins</a> &rsaquo; Rolling hard due dates</div>
+
+<div id="doc3">
+    <a href="http://bywatersolutions.com" target="_blank"><img src="[% PLUGIN_PATH %]/logo.png" /></a>
+    <h3>Rolling hard due dates</h3>
+
+    <p>
+        This tool will allow you to define any number of dates on which hard due dates should be updated. 
+        When the hard due date is updated, the following actions will occur for each row that falls on that date:
+
+        <ol>
+            <li>The hard due date rule in the issuing rules will be updated to the value in the field <i>Update hard due date to</i>.</li>
+            <li>All items issued that match the given borrower category and item type that are due after the date given will have their due dates updated to the date given</li>
+        </ol>
+
+        <p>
+            <i>Note: </i>
+            the "All" rules here affect <i>every</i> borrower category or itemtype. If you set a hard due date with "All categories" and "All item types", that would
+            add a hard due date rule to <i>every</i> circulation rule you have defined, not just the "All" rules in yoru circulation rules.
+        </p>
+    </p>
+
+	<form method="get">
+        <input type="hidden" name="class" value="[% CLASS %]"/>
+        <input type="hidden" name="method" value="[% METHOD %]"/>
+        <input type="hidden" name="next_step" value="add"/>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>On this date</th>
+                    <th>Update hard due date to</th>
+                    <th>Borrower category</th>
+                    <th>Item type</th>
+                    <th>&nbsp;</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                [% FOREACH d IN hard_due_dates %]
+                    <tr>
+                        <td>[% d.on_date | $KohaDates %]</td>
+                        <td>[% d.hard_due_date | $KohaDates %]</td>
+                        <td>
+                            [% FOREACH c IN categorycodes %]
+                                [% IF c.categorycode == d.categorycode %]
+                                    [% c.description %]
+                                [% END %]
+                            [% END %]
+                        </td>
+                        <td>
+                            [% FOREACH i IN itemtypes %]
+                                [% IF i.itemtype == d.itemtype %]
+                                    [% i.description %]
+                                [% END %]
+                            [% END %]
+                        </td>
+                        <td>
+                            <a href="/cgi-bin/koha/plugins/run.pl?class=Koha%3A%3APlugin%3A%3ACom%3A%3AByWaterSolutions%3A%3ARollingHardDueDates&method=tool&next_step=delete&id=[% d.id %]">Delete</a>
+                        </td>
+                    </tr>
+                [% END %]
+            </tbody>
+
+            <tfoot>
+                <tr>
+                    <td>
+                        <input type="text" id="on_date" name="on_date" size="10" class="datepicker" />
+                    </td>
+
+                    <td>
+                        <input type="text" id="hard_due_date" name="hard_due_date" size="10" class="datepicker" />
+                    </td>
+
+                    <td>
+                        <select id="categorycode" name="categorycode">
+                            <option value="">All categories</option>
+
+                            [% FOREACH c IN categorycodes %]
+                                <option value="[% c.categorycode %]">[% c.description %]</option>
+                            [% END %]
+                        </select>
+                    </td>
+
+                    <td>
+                        <select id="itemtype" name="itemtype">
+                            <option value="">All item types</option>
+
+                            [% FOREACH i IN itemtypes %]
+                                <option value="[% i.itemtype %]">[% i.description %]</option>
+                            [% END %]
+                        </select>
+                    </td>
+
+                    <td>
+		                <input type="submit" value="Save" />
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+	</form>
+
+    <br/><br/>
+
+    <p>
+        <form method="get">
+            <input type="hidden" name="class" value="[% CLASS %]"/>
+            <input type="hidden" name="method" value="[% METHOD %]"/>
+            <input type="hidden" name="next_step" value="update_now"/>
+
+            <input type="submit" value="Update hard due dates now!" />
+        </form>
+    </p>
+
+[% INCLUDE 'intranet-bottom.inc' %]

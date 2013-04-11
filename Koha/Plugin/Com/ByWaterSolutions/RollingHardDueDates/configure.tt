@@ -1,0 +1,27 @@
+[% USE KohaDates %]
+[% INCLUDE 'doc-head-open.inc' %]
+ <title>Koha: Plugin: Rolling hard due dates</title>
+[% INCLUDE 'doc-head-close.inc' %]
+[% INCLUDE 'calendar.inc' %]
+</head>
+<body>
+[% INCLUDE 'header.inc' %]
+[% INCLUDE 'cat-search.inc' %]
+
+<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/plugins/plugins-home.pl">Plugins</a> &rsaquo; Rolling hard due dates</div>
+
+<div id="doc3">
+    <a href="http://bywatersolutions.com" target="_blank"><img src="[% PLUGIN_PATH %]/logo.png" /></a>
+    <h3>Rolling hard due dates</h3>
+
+    <p>This tool will allow you to define any number of dates on which hard due dates should be updated.</p>
+
+    <h2>Additional setup</h2>
+    <p>
+        Please have your system administrator add the following line to the crontab:
+        <pre>59 23 * * *  [% cronjob %]</pre>
+        <br/>
+        If you opt to not add this line to your crontab, you will need to run "Update hard due dates now!" nightly.
+    </p>
+
+[% INCLUDE 'intranet-bottom.inc' %]
