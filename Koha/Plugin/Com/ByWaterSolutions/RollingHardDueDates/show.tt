@@ -89,7 +89,9 @@
                             [% END %]
                         </td>
                         <td>
-                            <a href="/cgi-bin/koha/plugins/run.pl?class=Koha%3A%3APlugin%3A%3ACom%3A%3AByWaterSolutions%3A%3ARollingHardDueDates&method=tool&next_step=delete&id=[% d.id %]">Delete</a>
+                            <a href="/cgi-bin/koha/plugins/run.pl?class=Koha%3A%3APlugin%3A%3ACom%3A%3AByWaterSolutions%3A%3ARollingHardDueDates&method=tool&next_step=delete&id=[% d.id %]"
+                               onclick="return confirm('Are you sure you want to delete this rule?');"
+                            >Delete</a>
                         </td>
                     </tr>
                 [% END %]
@@ -138,7 +140,7 @@
     <br/><br/>
 
     <p>
-        <form method="get">
+        <form method="get" onsubmit="return confirm('Are you sure you want to update your hard due dates now?');">
             <input type="hidden" name="class" value="[% CLASS %]"/>
             <input type="hidden" name="method" value="[% METHOD %]"/>
             <input type="hidden" name="next_step" value="update_now"/>
