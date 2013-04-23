@@ -11,18 +11,20 @@ use C4::Context;
 use C4::Auth;
 use C4::ItemType;
 use C4::Members qw{ GetBorrowercategoryList };
-use Koha::DateUtils qw{ dt_from_string };
+use C4::Circulation qw{ GetIssuingRule };
+use Koha::DateUtils;
 
 ## Here we set our plugin version
-our $VERSION = 1.01;
+our $VERSION = 1.11;
 
 ## Here is our metadata, some keys are required, some are optional
 our $metadata = {
-    name            => 'Rolling Hard Due Dates',
-    author          => 'Kyle M Hall',
-    description     => 'Allows for hard due dates to be updated automaitcally at intervals.',
+    name   => 'Rolling Hard Due Dates',
+    author => 'Kyle M Hall',
+    description =>
+      'Allows for hard due dates to be updated automaitcally at intervals.',
     date_authored   => '2013-04-10',
-    date_updated    => '2013-04-10',
+    date_updated    => '2013-04-22',
     minimum_version => '3.1000000',
     maximum_version => undef,
     version         => $VERSION,
@@ -52,12 +54,14 @@ sub tool {
 
     if ( $next_step eq 'add' ) {
         $self->add();
-    } elsif ( $next_step eq 'delete' ) {
+    }
+    elsif ( $next_step eq 'delete' ) {
         $self->delete();
-    } elsif ( $next_step eq 'update_now' ) {
-        $self->update_hard_due_dates();
-        $self->show();
-    } else {
+    }
+    elsif ( $next_step eq 'update_now' ) {
+        $self->show( $self->update_hard_due_dates() );
+    }
+    else {
         $self->show();
     }
 }
@@ -79,6 +83,7 @@ sub show {
     my $template = $self->get_template( { file => 'show.tt' } );
 
     $template->param(
+        %$args,
         hard_due_dates => $hard_due_dates,
         categorycodes  => GetBorrowercategoryList(),
         itemtypes      => [ C4::ItemType->all() ],
@@ -97,8 +102,9 @@ sub add {
 
     my $on_date       = $cgi->param("on_date");
     my $hard_due_date = $cgi->param("hard_due_date");
-    my $categorycode  = $cgi->param("categorycode");
-    my $itemtype      = $cgi->param("itemtype");
+
+    my $categorycode = $cgi->param("categorycode") || q{};
+    my $itemtype     = $cgi->param("itemtype")     || q{};
 
     if ( $on_date && $hard_due_date ) {
         $on_date       = dt_from_string($on_date);
@@ -153,11 +159,16 @@ sub update_hard_due_dates {
 
     my $actions = $sth->fetchall_arrayref( {} );
 
+    my $rules_affected  = 0;
+    my $issues_affected = 0;
+
+    my $circ_control = C4::Context->preference('CircControl');
+
     foreach my $action (@$actions) {
         my $categorycode = $action->{'categorycode'} || '%';
         my $itemtype     = $action->{'itemtype'}     || '%';
 
-        $dbh->do(
+        $rules_affected += $dbh->do(
             qq{
                 UPDATE issuingrules 
                 SET hardduedate = ?, hardduedatecompare = ?
@@ -170,23 +181,50 @@ sub update_hard_due_dates {
             $itemtype,
         );
 
-        $dbh->do(
-            qq{
-                UPDATE issues
-                JOIN borrowers ON issues.borrowernumber = borrowers.borrowernumber
-                JOIN items ON issues.itemnumber = items.itemnumber
-                SET issues.date_due = ?
-                WHERE items.itype LIKE ?
-                  AND borrowers.categorycode LIKE ?
-                  AND DATE(issues.date_due) > ?
-            },
-            {},
-            $action->{'hard_due_date'} . " 23:59:00",
-            $itemtype,
-            $categorycode,
-            $action->{'hard_due_date'},
-        );
+        my $sql2 = qq{
+            SELECT 
+                issues.*, 
+                items.itype AS itemtype,
+                borrowers.categorycode
+            FROM issues
+            LEFT JOIN items ON issues.itemnumber = items.itemnumber
+            LEFT JOIN borrowers ON issues.borrowernumber = borrowers.borrowernumber
+        };
+        my $sth2 = $dbh->prepare($sql2);
+        $sth2->execute();
+        while ( my $issue = $sth2->fetchrow_hashref() ) {
+            my $rule = GetIssuingRule( $issue->{categorycode},
+                $issue->{itemtype}, $issue->{branchcode} );
+
+            if ( $rule->{hardduedate} ) {
+                if ( $rule->{hardduedatecompare} eq '-1' ) {
+                    my $date_due = dt_from_string( $issue->{date_due}, 'iso' );
+                    my $hard_due_date =
+                      dt_from_string( $rule->{hardduedate} . " 23:59:00",
+                        'iso' );
+
+                    if ( DateTime->compare( $date_due, $hard_due_date ) ) {
+                        $dbh->do(
+                            q{ UPDATE issues SET date_due = ? WHERE borrowernumber = ? AND itemnumber = ? },
+                            {},
+                            (
+                                $hard_due_date->ymd() . " 23:59:00",
+                                $issue->{borrowernumber},
+                                $issue->{itemnumber}
+                            )
+                        );
+
+                        $issues_affected++;
+                    }
+                }
+            }
+        }
     }
+
+    return {
+        rules_affected  => $rules_affected,
+        issues_affected => $issues_affected
+    };
 }
 
 sub configure {
@@ -195,9 +233,7 @@ sub configure {
 
     my $template = $self->get_template( { file => 'configure.tt' } );
 
-    $template->param(
-        cronjob => $self->mbf_path('cronjob.pl'),
-    );
+    $template->param( cronjob => $self->mbf_path('cronjob.pl'), );
 
     print $cgi->header();
     print $template->output();
@@ -210,10 +246,12 @@ sub install {
 
     return C4::Context->dbh->do(
         qq{
-              CREATE TABLE $table (
+              CREATE TABLE IF NOT EXISTS $table (
               id int(11) NOT NULL AUTO_INCREMENT,
               on_date DATE NOT NULL,
               hard_due_date DATE NOT NULL,
+              categorycode varchar(10) NOT NULL DEFAULT '',
+              itemtype varchar(10) NOT NULL DEFAULT '',
               PRIMARY KEY (id)
               ) ENGINE = INNODB;
           }

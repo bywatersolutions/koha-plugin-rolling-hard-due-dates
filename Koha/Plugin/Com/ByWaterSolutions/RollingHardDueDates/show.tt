@@ -14,19 +14,30 @@
     <a href="http://bywatersolutions.com" target="_blank"><img src="[% PLUGIN_PATH %]/logo.png" /></a>
     <h3>Rolling hard due dates</h3>
 
+    [% IF rules_affected.defined %]
+        <div class="dialog alert">
+            <h3 class="warn">Circulation rules and issues updated!</h3>
+            <p>Rules updated: [% rules_affected %]</p>
+            <p>Issues updated: [% issues_affected %]<p>
+        </div>
+    [% END %]
+
     <p>
         This tool will allow you to define any number of dates on which hard due dates should be updated. 
         When the hard due date is updated, the following actions will occur for each row that falls on that date:
 
         <ol>
-            <li>The hard due date rule in the issuing rules will be updated to the value in the field <i>Update hard due date to</i>.</li>
+            <li>The hard due date rule in the circulation rules will be updated to the value in the field <i>Update hard due date to</i>.</li>
             <li>All items issued that match the given borrower category and item type that are due after the date given will have their due dates updated to the date given</li>
         </ol>
 
         <p>
             <i>Note: </i>
-            the "All" rules here affect <i>every</i> borrower category or itemtype. If you set a hard due date with "All categories" and "All item types", that would
-            add a hard due date rule to <i>every</i> circulation rule you have defined, not just the "All" rules in yoru circulation rules.
+            the "All" rules here affect <i>All</i> borrower category or itemtype rules only. If you set a hard due date with "All" and "All", that would
+            add a hard due date rule to <i>only</i> your last default circulation rule ( i.e. <i>All</i>/<i>All</i> ).
+
+            The "Every" rules affect <i>every</i> rule, including the <i>All</i> rules you may have defined in your circulation rules. So a new rule here set
+            with <i>Every category ( including All )</i> and <i>Every item type ( including All )</i> would affect each and every circulation rule you have set.
         </p>
     </p>
 
@@ -52,16 +63,28 @@
                         <td>[% d.on_date | $KohaDates %]</td>
                         <td>[% d.hard_due_date | $KohaDates %]</td>
                         <td>
-                            [% FOREACH c IN categorycodes %]
-                                [% IF c.categorycode == d.categorycode %]
-                                    [% c.description %]
+                            [% IF d.categorycode == '*' %]
+                                <i>All</i>
+                            [% ELSIF d.categorycode == '' %]
+                                <b>Every category ( including All )</b>
+                            [% ELSE %]
+                                [% FOREACH c IN categorycodes %]
+                                    [% IF c.categorycode == d.categorycode %]
+                                        [% c.description %]
+                                    [% END %]
                                 [% END %]
                             [% END %]
                         </td>
                         <td>
-                            [% FOREACH i IN itemtypes %]
-                                [% IF i.itemtype == d.itemtype %]
-                                    [% i.description %]
+                            [% IF d.itemtype == '*' %]
+                                <i>All</i>
+                            [% ELSIF d.itemtype == '' %]
+                                <b>Every category ( including All )</b>
+                            [% ELSE %]
+                                [% FOREACH i IN itemtypes %]
+                                    [% IF i.itemtype == d.itemtype %]
+                                        [% i.description %]
+                                    [% END %]
                                 [% END %]
                             [% END %]
                         </td>
@@ -84,7 +107,8 @@
 
                     <td>
                         <select id="categorycode" name="categorycode">
-                            <option value="">All categories</option>
+                            <option value="">Every category ( including All )</option>
+                            <option value="*">All</option>
 
                             [% FOREACH c IN categorycodes %]
                                 <option value="[% c.categorycode %]">[% c.description %]</option>
@@ -94,7 +118,8 @@
 
                     <td>
                         <select id="itemtype" name="itemtype">
-                            <option value="">All item types</option>
+                            <option value="">Every item type ( including All )</option>
+                            <option value="*">All</option>
 
                             [% FOREACH i IN itemtypes %]
                                 <option value="[% i.itemtype %]">[% i.description %]</option>
