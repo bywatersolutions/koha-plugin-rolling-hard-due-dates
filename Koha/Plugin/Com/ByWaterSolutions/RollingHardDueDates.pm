@@ -203,7 +203,7 @@ sub update_hard_due_dates {
                       dt_from_string( $rule->{hardduedate} . " 23:59:00",
                         'iso' );
 
-                    if ( DateTime->compare( $date_due, $hard_due_date ) ) {
+                    if ( $date_due->ymd() gt $hard_due_date->ymd() ) {
                         $dbh->do(
                             q{ UPDATE issues SET date_due = ? WHERE borrowernumber = ? AND itemnumber = ? },
                             {},
