@@ -1,6 +1,6 @@
 package Koha::Plugin::Com::ByWaterSolutions::RollingHardDueDates;
 
-## It's good practive to use Modern::Perl
+## It's good practice to use Modern::Perl
 use Modern::Perl;
 
 ## Required for all plugins
