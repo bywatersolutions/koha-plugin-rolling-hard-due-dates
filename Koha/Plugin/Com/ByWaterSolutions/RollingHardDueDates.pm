@@ -9,10 +9,9 @@ use base qw(Koha::Plugins::Base);
 ## We will also need to include any Koha libraries we want to access
 use C4::Context;
 use C4::Auth;
-use C4::ItemType;
-use C4::Members qw{ GetBorrowercategoryList };
-use C4::Circulation qw{ GetIssuingRule };
 use Koha::DateUtils;
+use Koha::Patron::Categories;
+use Koha::IssuingRules;
 
 ## Here we set our plugin version
 our $VERSION = 1.11;
@@ -85,8 +84,8 @@ sub show {
     $template->param(
         %$args,
         hard_due_dates => $hard_due_dates,
-        categorycodes  => GetBorrowercategoryList(),
-        itemtypes      => [ C4::ItemType->all() ],
+        categorycodes  => scalar Koha::Patron::Categories->search(),
+        itemtypes      => scalar Koha::ItemTypes->search(),,
     );
 
     print $cgi->header();
@@ -193,14 +192,17 @@ sub update_hard_due_dates {
         my $sth2 = $dbh->prepare($sql2);
         $sth2->execute();
         while ( my $issue = $sth2->fetchrow_hashref() ) {
-            my $rule = GetIssuingRule( $issue->{categorycode},
-                $issue->{itemtype}, $issue->{branchcode} );
+            my $rule = Koha::IssuingRules->get_effective_issuing_rule(
+                categorycode => $issue->{categorycode},
+                itemtype     => $issue->{itemtype},
+                branchcode   => $issue->{branchcode}
+            );
 
-            if ( $rule->{hardduedate} ) {
-                if ( $rule->{hardduedatecompare} eq '-1' ) {
+            if ( $rule->hardduedate ) {
+                if ( $rule->hardduedatecompare eq '-1' ) {
                     my $date_due = dt_from_string( $issue->{date_due}, 'iso' );
                     my $hard_due_date =
-                      dt_from_string( $rule->{hardduedate} . " 23:59:00",
+                      dt_from_string( $rule->hardduedate . " 23:59:00",
                         'iso' );
 
                     if ( $date_due->ymd() gt $hard_due_date->ymd() ) {
