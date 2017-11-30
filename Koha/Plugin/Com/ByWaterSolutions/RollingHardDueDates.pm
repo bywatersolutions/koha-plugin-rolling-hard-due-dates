@@ -14,7 +14,7 @@ use Koha::Patron::Categories;
 use Koha::IssuingRules;
 
 ## Here we set our plugin version
-our $VERSION = 1.11;
+our $VERSION = "{VERSION}";
 
 ## Here is our metadata, some keys are required, some are optional
 our $metadata = {
