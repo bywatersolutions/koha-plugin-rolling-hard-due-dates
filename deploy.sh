@@ -6,7 +6,7 @@ then
   then
     echo "Building release"
     node increment_version.js
-    git commit -a -m "Version auto-incremented  - $TRAVIS_JOB_NUMBER"
+    git commit -a -m "Version auto-incremented  - $TRAVIS_JOB_NUMBER [ci skip]"
     gulp build
     gulp release
     git remote add github https://$GITHUB_TOKEN@github.com/bywatersolutions/koha-plugin-rolling-hard-due-dates
@@ -14,5 +14,5 @@ then
     git push github HEAD:master
   fi
 else
-  echo "No release needing."
+  echo "No release needed."
 fi
