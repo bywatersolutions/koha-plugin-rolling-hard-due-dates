@@ -11,7 +11,7 @@ use C4::Context;
 use C4::Auth;
 use Koha::DateUtils;
 use Koha::Patron::Categories;
-use Koha::IssuingRules;
+use Koha::CirculationRules;
 
 ## Here we set our plugin version
 our $VERSION = "{VERSION}";
@@ -192,17 +192,20 @@ sub update_hard_due_dates {
         my $sth2 = $dbh->prepare($sql2);
         $sth2->execute();
         while ( my $issue = $sth2->fetchrow_hashref() ) {
-            my $rule = Koha::IssuingRules->get_effective_issuing_rule(
-                categorycode => $issue->{categorycode},
-                itemtype     => $issue->{itemtype},
-                branchcode   => $issue->{branchcode}
+            my $rule = Koha::CirculationRules->get_effective_rules(
+                {
+                    categorycode => $borrowertype,
+                    itemtype     => $itemtype,
+                    branchcode   => $branchcode,
+                    rules        => [ 'hardduedate', 'hardduedatecompare' ],
+                }
             );
 
-            if ( $rule->hardduedate ) {
-                if ( $rule->hardduedatecompare eq '-1' ) {
+            if ( $rule->{hardduedate} ) {
+                if ( $rule->{hardduedatecompare} eq '-1' ) {
                     my $date_due = dt_from_string( $issue->{date_due}, 'iso' );
                     my $hard_due_date =
-                      dt_from_string( $rule->hardduedate . " 23:59:00",
+                      dt_from_string( $rule->{hardduedate} . " 23:59:00",
                         'iso' );
 
                     if ( $date_due->ymd() gt $hard_due_date->ymd() ) {
