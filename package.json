@@ -1,7 +1,7 @@
 {
   "name": "koha-plugin-rolling-hard-due-dates",
-  "version": "1.0.5",
-  "previous_version": "1.0.4",
+  "version": "1.0.6",
+  "previous_version": "1.0.5",
   "description": "Koha Rolling Hard Due Dates Plugin",
   "devDependencies": {
     "gulp": "^3.9.1",
