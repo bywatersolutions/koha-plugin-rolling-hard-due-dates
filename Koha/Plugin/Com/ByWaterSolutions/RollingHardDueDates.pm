@@ -194,9 +194,9 @@ sub update_hard_due_dates {
         while ( my $issue = $sth2->fetchrow_hashref() ) {
             my $rule = Koha::CirculationRules->get_effective_rules(
                 {
-                    categorycode => $borrowertype,
-                    itemtype     => $itemtype,
-                    branchcode   => $branchcode,
+                    categorycode => $issue->{categorycode},
+                    itemtype     => $issue->{itemtype},
+                    branchcode   => $issue->{branchcode},
                     rules        => [ 'hardduedate', 'hardduedatecompare' ],
                 }
             );
