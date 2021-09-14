@@ -24,7 +24,7 @@ our $metadata = {
       'Allows for hard due dates to be updated automaitcally at intervals.',
     date_authored   => '2013-04-10',
     date_updated    => '2013-04-22',
-    minimum_version => '3.1000000',
+    minimum_version => '21.05',
     maximum_version => undef,
     version         => $VERSION,
 };
@@ -167,18 +167,25 @@ sub update_hard_due_dates {
         my $categorycode = $action->{'categorycode'} || '%';
         my $itemtype     = $action->{'itemtype'}     || '%';
 
-        $rules_affected += $dbh->do(
-            qq{
-                UPDATE issuingrules 
-                SET hardduedate = ?, hardduedatecompare = ?
-                WHERE categorycode LIKE ? AND itemtype LIKE ?
-            },
-            {},
-            $action->{'hard_due_date'},
-            '-1',
-            $categorycode,
-            $itemtype,
+        my $params = {};
+        $params->{categorycode} = $categorycode unless $categorycode eq '%';
+        $params->{itemtype} = $itemtype unless $itemtype eq '%';
+
+        my $rules = Koha::CirculationRules->search(
+            {
+                rule_name => 'hardduedate',
+                %$params,
+            }
         );
+        $rules_affected += $rules->count;
+        $rules->update({ rule_value => $action->{hard_due_date} });
+
+        $rules = Koha::CirculationRules->search(
+            {
+                rule_name => 'hardduedatecompare',
+                %$params,
+            }
+        )->update({ rule_value => '-1' });
 
         my $sql2 = qq{
             SELECT 
