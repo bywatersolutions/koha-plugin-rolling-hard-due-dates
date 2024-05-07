@@ -187,9 +187,9 @@ sub update_hard_due_dates {
             }
         )->update( { rule_value => '-1' } );
 
-        my $update_checkouts = $self->retrieve_data('update_checkouts');
+        my $update_checkouts = $self->retrieve_data('update_checkouts') || "Yes";
 
-        if ($update_checkouts) {
+        if ($update_checkouts eq 'Yes') {
             my $sql2 = qq{
                 SELECT
                     issues.*,
