@@ -24,4 +24,30 @@
         If you opt to not add this line to your crontab, you will need to run "Update hard due dates now!" nightly.
     </p>
 
+    <form method="get">
+        <input type="hidden" name="class" value="[% CLASS %]"/>
+        <input type="hidden" name="method" value="[% METHOD %]"/>
+
+        <label for="update_checkouts">Update current checkouts:</label>
+        <select name="update_checkouts">
+            [% IF update_checkouts == 'Yes' %]
+                <option value="Yes" selected="selected">Yes</option>
+            [% ELSE %]
+                <option value="Yes">Yes</option>
+            [% END %]
+
+            [% IF update_checkouts == 'No' %]
+                <option value="No" selected="selected">No</option>
+            [% ELSE %]
+                <option value="No">No</option>
+            [% END %]
+        </select>
+
+        <p>
+
+        <input type="hidden" name="save" value="1" />
+
+        <input type="submit" value="Save configuration" />
+    </form>
+
 [% INCLUDE 'intranet-bottom.inc' %]

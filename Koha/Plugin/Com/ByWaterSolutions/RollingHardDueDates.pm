@@ -169,7 +169,7 @@ sub update_hard_due_dates {
 
         my $params = {};
         $params->{categorycode} = $categorycode unless $categorycode eq '%';
-        $params->{itemtype} = $itemtype unless $itemtype eq '%';
+        $params->{itemtype}     = $itemtype     unless $itemtype eq '%';
 
         my $rules = Koha::CirculationRules->search(
             {
@@ -178,55 +178,60 @@ sub update_hard_due_dates {
             }
         );
         $rules_affected += $rules->count;
-        $rules->update({ rule_value => $action->{hard_due_date} });
+        $rules->update( { rule_value => $action->{hard_due_date} } );
 
         $rules = Koha::CirculationRules->search(
             {
                 rule_name => 'hardduedatecompare',
                 %$params,
             }
-        )->update({ rule_value => '-1' });
+        )->update( { rule_value => '-1' } );
 
-        my $sql2 = qq{
-            SELECT 
-                issues.*, 
-                items.itype AS itemtype,
-                borrowers.categorycode
-            FROM issues
-            LEFT JOIN items ON issues.itemnumber = items.itemnumber
-            LEFT JOIN borrowers ON issues.borrowernumber = borrowers.borrowernumber
-        };
-        my $sth2 = $dbh->prepare($sql2);
-        $sth2->execute();
-        while ( my $issue = $sth2->fetchrow_hashref() ) {
-            my $rule = Koha::CirculationRules->get_effective_rules(
-                {
-                    categorycode => $issue->{categorycode},
-                    itemtype     => $issue->{itemtype},
-                    branchcode   => $issue->{branchcode},
-                    rules        => [ 'hardduedate', 'hardduedatecompare' ],
-                }
-            );
+        my $update_checkouts = $self->retrieve_data('update_checkouts');
 
-            if ( $rule->{hardduedate} ) {
-                if ( $rule->{hardduedatecompare} eq '-1' ) {
-                    my $date_due = dt_from_string( $issue->{date_due}, 'iso' );
-                    my $hard_due_date =
-                      dt_from_string( $rule->{hardduedate} . " 23:59:00",
-                        'iso' );
+        if ($update_checkouts) {
+            my $sql2 = qq{
+                SELECT
+                    issues.*,
+                    items.itype AS itemtype,
+                    borrowers.categorycode
+                FROM issues
+                LEFT JOIN items ON issues.itemnumber = items.itemnumber
+                LEFT JOIN borrowers ON issues.borrowernumber = borrowers.borrowernumber
+            };
+            my $sth2 = $dbh->prepare($sql2);
+            $sth2->execute();
+            while ( my $issue = $sth2->fetchrow_hashref() ) {
+                my $rule = Koha::CirculationRules->get_effective_rules(
+                    {
+                        categorycode => $issue->{categorycode},
+                        itemtype     => $issue->{itemtype},
+                        branchcode   => $issue->{branchcode},
+                        rules        => [ 'hardduedate', 'hardduedatecompare' ],
+                    }
+                );
 
-                    if ( $date_due->ymd() gt $hard_due_date->ymd() ) {
-                        $dbh->do(
-                            q{ UPDATE issues SET date_due = ? WHERE borrowernumber = ? AND itemnumber = ? },
-                            {},
-                            (
-                                $hard_due_date->ymd() . " 23:59:00",
-                                $issue->{borrowernumber},
-                                $issue->{itemnumber}
-                            )
-                        );
+                if ( $rule->{hardduedate} ) {
+                    if ( $rule->{hardduedatecompare} eq '-1' ) {
+                        my $date_due =
+                          dt_from_string( $issue->{date_due}, 'iso' );
+                        my $hard_due_date =
+                          dt_from_string( $rule->{hardduedate} . " 23:59:00",
+                            'iso' );
 
-                        $issues_affected++;
+                        if ( $date_due->ymd() gt $hard_due_date->ymd() ) {
+                            $dbh->do(
+                                q{ UPDATE issues SET date_due = ? WHERE borrowernumber = ? AND itemnumber = ? },
+                                {},
+                                (
+                                    $hard_due_date->ymd() . " 23:59:00",
+                                    $issue->{borrowernumber},
+                                    $issue->{itemnumber}
+                                )
+                            );
+
+                            $issues_affected++;
+                        }
                     }
                 }
             }
@@ -245,10 +250,23 @@ sub configure {
 
     my $template = $self->get_template( { file => 'configure.tt' } );
 
-    $template->param( cronjob => $self->mbf_path('cronjob.pl'), );
+    my ( $self, $args ) = @_;
+    my $cgi = $self->{'cgi'};
 
-    print $cgi->header();
-    print $template->output();
+    if ( $cgi->param('save') ) {
+        $self->store_data(
+            {
+                update_checkouts => $cgi->param('update_checkouts'),
+            }
+        );
+    }
+
+    $template->param(
+        update_checkouts => $self->retrieve_data('update_checkouts'),
+        cronjob          => $self->mbf_path('cronjob.pl'),
+    );
+
+    $self->output_html( $template->output() );
 }
 
 sub install {
