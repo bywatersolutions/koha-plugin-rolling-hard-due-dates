@@ -143,6 +143,11 @@ sub delete {
     $self->show();
 }
 
+sub cronjob_nightly {
+    my ( $self, $args ) = @_;
+    $self->update_hard_due_dates( $args );
+}
+
 sub update_hard_due_dates {
     my ( $self, $args ) = @_;
 

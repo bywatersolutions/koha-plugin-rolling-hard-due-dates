@@ -15,14 +15,7 @@
     <h3>Rolling hard due dates</h3>
 
     <p>This tool will allow you to define any number of dates on which hard due dates should be updated.</p>
-
-    <h2>Additional setup</h2>
-    <p>
-        Please have your system administrator add the following line to the crontab:
-        <pre>59 23 * * *  [% cronjob %]</pre>
-        <br/>
-        If you opt to not add this line to your crontab, you will need to run "Update hard due dates now!" nightly.
-    </p>
+    <p>This plugin will check and update checkouts and circulation rules based on the triggers set in the <i>tool</i> section of this plugin on a nightly basis.</p>
 
     <form method="get">
         <input type="hidden" name="class" value="[% CLASS %]"/>
