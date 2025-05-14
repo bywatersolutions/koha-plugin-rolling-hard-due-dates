@@ -100,15 +100,15 @@
             <tfoot>
                 <tr>
                     <td>
-                        <input type="text" id="on_date" name="on_date" size="10" class="datepicker" />
+                        <input type="text" id="on_date" name="on_date" size="10" class="flatpickr" />
                     </td>
 
                     <td>
-                        <input type="text" id="hard_due_date" name="hard_due_date" size="10" class="datepicker" />
+                        <input type="text" id="hard_due_date" name="hard_due_date" size="10" class="flatpickr" />
                     </td>
 
                     <td>
-                        <select id="categorycode" name="categorycode">
+                        <select id="categorycode" name="categorycode" size="[% categorycodes.count %]" multiple>
                             <option value="">Every category ( including All )</option>
                             <option value="*">All</option>
 
@@ -119,7 +119,7 @@
                     </td>
 
                     <td>
-                        <select id="itemtype" name="itemtype">
+                        <select id="itemtype" name="itemtype" size="[% itemtypes.count %]"multiple>
                             <option value="">Every item type ( including All )</option>
                             <option value="*">All</option>
 

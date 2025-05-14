@@ -102,24 +102,28 @@ sub add {
     my $on_date       = $cgi->param("on_date");
     my $hard_due_date = $cgi->param("hard_due_date");
 
-    my $categorycode = $cgi->param("categorycode") || q{};
-    my $itemtype     = $cgi->param("itemtype")     || q{};
+    my @categorycode = $cgi->param("categorycode");
+    my @itemtype     = $cgi->param("itemtype");
 
     if ( $on_date && $hard_due_date ) {
-        $on_date       = dt_from_string($on_date);
-        $hard_due_date = dt_from_string($hard_due_date);
+        foreach my $categorycode ( @categorycode ) {
+            foreach my $itemtype ( @itemtype ) {
+                $on_date       = dt_from_string($on_date);
+                $hard_due_date = dt_from_string($hard_due_date);
 
-        $dbh->do(
-            qq{
-                INSERT INTO $table ( on_date, hard_due_date, categorycode, itemtype )
-                VALUES( ?, ?, ?, ? );
-            },
-            {},
-            $on_date->ymd(),
-            $hard_due_date->ymd(),
-            $categorycode,
-            $itemtype,
-        );
+                $dbh->do(
+                    qq{
+                        INSERT INTO $table ( on_date, hard_due_date, categorycode, itemtype )
+                        VALUES( ?, ?, ?, ? );
+                    },
+                    {},
+                    $on_date->ymd(),
+                    $hard_due_date->ymd(),
+                    $categorycode,
+                    $itemtype,
+                );
+            }
+        }
     }
 
     $self->show();
@@ -254,9 +258,6 @@ sub configure {
     my $cgi = $self->{'cgi'};
 
     my $template = $self->get_template( { file => 'configure.tt' } );
-
-    my ( $self, $args ) = @_;
-    my $cgi = $self->{'cgi'};
 
     if ( $cgi->param('save') ) {
         $self->store_data(
